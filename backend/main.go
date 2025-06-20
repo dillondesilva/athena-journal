@@ -9,6 +9,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/google/uuid"
 	_ "github.com/mattn/go-sqlite3"
@@ -164,6 +165,90 @@ func chatStream(w http.ResponseWriter, r *http.Request, chatService *lm_service.
 	})
 }
 
+type ClarityRequest struct {
+	Timeframe string `json:"timeframe"`
+}
+
+type ClarityResponse struct {
+	Summary string `json:"summary"`
+}
+
+func clarityStreamHandler(w http.ResponseWriter, r *http.Request, notesService *notes_service.NotesServiceImpl, chatService *lm_service.ChatServiceImpl, db *sql.DB) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	w.Header().Set("Transfer-Encoding", "chunked")
+
+	var req ClarityRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+	var duration time.Duration
+	switch req.Timeframe {
+	case "week":
+		duration = 7 * 24 * time.Hour
+	case "month":
+		duration = 30 * 24 * time.Hour
+	case "6months":
+		duration = 180 * 24 * time.Hour
+	default:
+		http.Error(w, "Invalid timeframe", http.StatusBadRequest)
+		return
+	}
+	notes, err := notesService.GetNotesWithinTimeframe(db, duration)
+	if err != nil {
+		http.Error(w, "Failed to get notes", http.StatusInternalServerError)
+		return
+	}
+	var noteContents []string
+	for _, note := range notes {
+		noteContents = append(noteContents, note.Content)
+	}
+	err = chatService.GetClaritySummaryStream(noteContents, func(chunk string) {
+		w.Write([]byte(chunk))
+		if flusher, ok := w.(http.Flusher); ok {
+			flusher.Flush()
+		}
+	})
+	if err != nil {
+		http.Error(w, "Failed to get clarity", http.StatusInternalServerError)
+		return
+	}
+}
+
+func deleteNote(w http.ResponseWriter, r *http.Request, notesService *notes_service.NotesServiceImpl, db *sql.DB) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		fmt.Fprintln(w, "Error reading request body: ", err)
+		return
+	}
+
+	noteRequest := GetNoteRequest{}
+	err = json.Unmarshal(body, &noteRequest)
+	if err != nil {
+		fmt.Fprintln(w, "Error unmarshalling request body: ", err)
+		return
+	}
+
+	err = notesService.DeleteNote(uuid.MustParse(noteRequest.NoteId), db)
+	if err != nil {
+		fmt.Fprintln(w, "Error deleting note: ", err)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
 func main() {
 	// Initialising the database
 	db, _ := InitialiseDBClient("notes.db")
@@ -213,6 +298,14 @@ func main() {
 			return
 		}
 		chatStream(w, r, &chatService)
+	}))
+
+	http.HandleFunc("/clarity", enableCORS(func(w http.ResponseWriter, r *http.Request) {
+		clarityStreamHandler(w, r, &notesService, &chatService, db)
+	}))
+
+	http.HandleFunc("/deletenote", enableCORS(func(w http.ResponseWriter, r *http.Request) {
+		deleteNote(w, r, &notesService, db)
 	}))
 
 	log.Println("Server starting on :8080")

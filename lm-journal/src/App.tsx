@@ -8,6 +8,7 @@ import Dashboard from "@/views/Dashboard";
 import Chat from "@/views/Chat";
 import Notepad from "@/views/Notepad";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Clarity from "./views/Clarity";
 
 function App() {
   const [currentView, setCurrentView] = useState("dashboard");
@@ -19,12 +20,17 @@ function App() {
 
   return (
     <SidebarProvider>
-      <AppSidebar/>
-      <Routes>
-        <Route path="/" element={<Dashboard viewChangeHandler={setCurrentView}/>} />
-        <Route path="/chat" element={<Chat viewChangeHandler={setCurrentView}/>} />
-        <Route path="/notepad/:id" element={<Notepad viewChangeHandler={setCurrentView}/>} />
-      </Routes>
+      <div className="h-screen w-screen flex overflow-hidden">
+        <AppSidebar/>
+        <main className="flex-1 overflow-hidden">
+          <Routes>
+            <Route path="/" element={<Dashboard viewChangeHandler={setCurrentView}/>} />
+            <Route path="/chat" element={<Chat viewChangeHandler={setCurrentView}/>} />
+            <Route path="/notepad/:id" element={<Notepad />} />
+            <Route path="/clarity/:timeframe" element={<Clarity />} />
+          </Routes>
+        </main>
+      </div>
     </SidebarProvider>
   );
 }

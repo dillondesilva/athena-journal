@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "lm-journal",
+  "productName": "athena",
   "version": "0.1.0",
-  "identifier": "com.lm-journal.app",
+  "identifier": "com.athena.app",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "lm-journal",
+        "title": "Athena",
         "width": 800,
         "height": 600
       }

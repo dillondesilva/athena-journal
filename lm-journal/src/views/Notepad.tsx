@@ -370,9 +370,8 @@ export default function Notepad() {
                   <div className="glass-card fade-in p-6 h-full flex flex-col">
                     <div className="flex items-center gap-3 border-b border-gray-200/50 pb-4 mb-4">
                       <Brain className="h-6 w-6 text-blue-600" />
-                      <h3 className="font-semibold text-xl text-gray-800">Spock</h3>
+                      <h3 className="font-semibold text-xl text-gray-800">Athena</h3>
                     </div>
-                    
                     <div className="flex-1 flex flex-col">
                       {isLoading && (
                         <div className="flex flex-col items-center justify-center gap-3 text-blue-600 mb-6 fade-in">

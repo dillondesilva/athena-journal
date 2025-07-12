@@ -1,7 +1,7 @@
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Textarea } from "@/components/ui/textarea";
 
-export default function Chat({ viewChangeHandler }: { viewChangeHandler: (view: string) => void }) {
+export default function Chat() {
   return (
     <div className="w-full h-full">
       <SidebarTrigger />

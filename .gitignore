@@ -26,6 +26,9 @@ dist
 dist-ssr
 *.local
 
+temp/
+lm-journal/src-tauri/athena-be/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

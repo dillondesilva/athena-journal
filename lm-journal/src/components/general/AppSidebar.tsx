@@ -1,4 +1,4 @@
-import { Calendar, Home, HomeIcon, Inbox, Link, MessageCircle, Notebook, PlusIcon, Search, Settings, Wand2Icon } from "lucide-react"
+import { HomeIcon, PlusIcon, Wand2Icon } from "lucide-react"
 import { memo, useState } from "react"
 import { useHotkeys } from "react-hotkeys-hook"
 
@@ -21,12 +21,8 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "../ui/button"
 import { useNavigate } from "react-router-dom"
-import { Input } from "../ui/input"
 import {
-  Tooltip,
-  TooltipContent,
   TooltipProvider,
-  TooltipTrigger,
 } from "@/components/ui/tooltip"
 
 // Menu items.
@@ -119,9 +115,9 @@ export const AppSidebar = memo(() => {
                       </DialogHeader>
                       <p className="text-center">I want clarity across</p>
                       <div className="flex gap-2 justify-center">
-                        <Button onClick={() => handleClarityNavigation("/clarity/week")}>Past Week</Button>
-                        <Button onClick={() => handleClarityNavigation("/clarity/month")}>Past Month</Button>
-                        <Button onClick={() => handleClarityNavigation("/clarity/6months")}>Past 6 Months</Button>
+                        <Button onClick={() => handleClarityNavigation("/clarity/3days")}>Past 3 Days</Button>
+                        <Button onClick={() => handleClarityNavigation("/clarity/2weeks")}>Past 2 Weeks</Button>
+                        <Button onClick={() => handleClarityNavigation("/clarity/3months")}>Past 3 Months</Button>
                       </div>
                     </DialogContent>
                   </Dialog>

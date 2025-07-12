@@ -1,4 +1,3 @@
-import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useParams } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
 import { Loader2 } from "lucide-react";

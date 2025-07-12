@@ -13,7 +13,10 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"os/exec"
+	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -56,15 +59,98 @@ func (chatService *ChatServiceImpl) BeginHealthCheck() error {
 
 func (chatService *ChatServiceImpl) InitialiseChat() error {
 	// For now, we're spawning llama.cpp as if it existed on
-	// the system and no prebuilt binaries are included.
+	// the system and no prebuilt binaries are included. Note the way
+	// we are doing it is not ideal and we should probably package
+	// prebuilt binaries with the app.
 	if chatService.UseHf {
-		cmd := exec.Command("llama-server", "-hf", chatService.Model, "--port", "8029")
-		err := cmd.Start()
-		if err != nil {
-			log.Println("Error starting llama-server")
-			log.Println(err)
-			return err
+		// Try multiple common installation paths across different platforms
+		possiblePaths := []string{
+			// macOS paths
+			"/usr/local/bin/llama-server",    // Homebrew on Intel Mac
+			"/opt/homebrew/bin/llama-server", // Homebrew on Apple Silicon
+			"/usr/bin/llama-server",          // System-wide installation
+
+			// Linux paths
+			"/usr/local/bin/llama-server",               // Standard Linux installation
+			"/usr/bin/llama-server",                     // System-wide Linux
+			"/opt/llama.cpp/bin/llama-server",           // Custom installation
+			"/snap/bin/llama-server",                    // Snap package
+			"/var/lib/flatpak/exports/bin/llama-server", // Flatpak
+			"~/.local/bin/llama-server",                 // User-local installation
+			"/home/*/bin/llama-server",                  // User bin directories
+
+			// Windows paths
+			"C:\\Program Files\\llama.cpp\\llama-server.exe",
+			"C:\\Program Files (x86)\\llama.cpp\\llama-server.exe",
+			"C:\\llama.cpp\\llama-server.exe",
+			"C:\\Users\\*\\AppData\\Local\\llama.cpp\\llama-server.exe",
+			"C:\\Users\\*\\AppData\\Roaming\\llama.cpp\\llama-server.exe",
+			"C:\\Users\\*\\llama.cpp\\llama-server.exe",
+
+			// Common user directories
+			"~/.cargo/bin/llama-server",             // Rust/Cargo installation
+			"~/.local/share/cargo/bin/llama-server", // Alternative Cargo path
+
+			// Fallback to PATH
+			"llama-server",
 		}
+
+		var cmd *exec.Cmd
+		var err error
+		var successfulPath string
+
+		for _, path := range possiblePaths {
+			// Handle tilde expansion for user home directory
+			if strings.HasPrefix(path, "~") {
+				homeDir, err := os.UserHomeDir()
+				if err == nil {
+					path = strings.Replace(path, "~", homeDir, 1)
+				}
+			}
+
+			// Handle wildcard expansion for user directories
+			if strings.Contains(path, "*") {
+				// Try common user directories
+				userDirs := []string{
+					os.Getenv("USERPROFILE"), // Windows
+					os.Getenv("HOME"),        // Unix-like
+				}
+
+				for _, userDir := range userDirs {
+					if userDir != "" {
+						expandedPath := strings.Replace(path, "*", filepath.Base(userDir), 1)
+						cmd = exec.Command(expandedPath, "-hf", chatService.Model, "--port", "8029")
+						err = cmd.Start()
+						if err == nil {
+							successfulPath = expandedPath
+							break
+						}
+					}
+				}
+				if successfulPath != "" {
+					break
+				}
+				continue
+			}
+
+			cmd = exec.Command(path, "-hf", chatService.Model, "--port", "8029")
+			err = cmd.Start()
+			if err == nil {
+				successfulPath = path
+				break
+			}
+		}
+
+		if successfulPath == "" {
+			log.Println("Error starting llama-server from any known location")
+			log.Println("Tried the following paths:")
+			for _, path := range possiblePaths {
+				log.Printf("  - %s", path)
+			}
+			return fmt.Errorf("llama-server not found in any expected location")
+		}
+
+		log.Printf("Successfully started llama-server from: %s", successfulPath)
 
 		go chatService.BeginHealthCheck()
 	} else {

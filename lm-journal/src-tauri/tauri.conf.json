@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "athena",
+  "productName": "Athena",
   "version": "0.1.0",
   "identifier": "com.athena.app",
   "build": {
@@ -30,6 +30,9 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
+    ],
+    "externalBin": [
+      "athena-be/athena-backend"
     ]
   }
 }

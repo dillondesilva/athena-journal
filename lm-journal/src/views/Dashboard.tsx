@@ -11,9 +11,8 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
 
-function Dashboard({ viewChangeHandler }: { viewChangeHandler: (view: string) => void }) {
+function Dashboard() {
     const [notes, setNotes] = useState<Note[]>([]);
     const [searchQuery, setSearchQuery] = useState<string>("");
     const navigate = useNavigate();
@@ -28,7 +27,7 @@ function Dashboard({ viewChangeHandler }: { viewChangeHandler: (view: string) =>
         fetchJournalEntries();
     }, []);
 
-    const handleDeleteNote = async (noteId: string, e: React.MouseEvent) => {
+    const handleDeleteNote = async (noteId: string, _e: React.MouseEvent) => {
         try {
             const response = await fetch("http://localhost:8080/deletenote", {
                 method: "POST",
@@ -113,7 +112,7 @@ function Dashboard({ viewChangeHandler }: { viewChangeHandler: (view: string) =>
                             <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
                                 <div className="space-y-2">
                                     <CardTitle>{note.Title}</CardTitle>
-                                    <CardDescription>{formatLastUpdated(note.UpdatedAt)}</CardDescription>
+                                    <CardDescription>{formatLastUpdated(note.UpdatedAt.toString())}</CardDescription>
                                 </div>
                                 <DropdownMenu>
                                     <DropdownMenuTrigger>

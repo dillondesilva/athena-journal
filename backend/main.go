@@ -9,6 +9,8 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/google/uuid"
@@ -38,8 +40,7 @@ func enableCORS(next http.HandlerFunc) http.HandlerFunc {
 func InitialiseDBClient(dbName string) (*sql.DB, error) {
 	db, err := sql.Open("sqlite3", dbName)
 	if err != nil {
-		log.Fatal(err)
-		return nil, err
+		return nil, fmt.Errorf("failed to open database %s: %w", dbName, err)
 	}
 
 	return db, nil
@@ -188,27 +189,47 @@ func clarityStreamHandler(w http.ResponseWriter, r *http.Request, notesService *
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
+
+	log.Printf("Clarity request received for timeframe: %s", req.Timeframe)
+
 	var duration time.Duration
 	switch req.Timeframe {
-	case "week":
-		duration = 7 * 24 * time.Hour
-	case "month":
-		duration = 30 * 24 * time.Hour
-	case "6months":
-		duration = 180 * 24 * time.Hour
+	case "3days":
+		duration = 3 * 24 * time.Hour
+	case "2weeks":
+		duration = 14 * 24 * time.Hour
+	case "3months":
+		duration = 90 * 24 * time.Hour
 	default:
 		http.Error(w, "Invalid timeframe", http.StatusBadRequest)
 		return
 	}
+
+	log.Printf("Calculated duration: %v", duration)
+
 	notes, err := notesService.GetNotesWithinTimeframe(db, duration)
 	if err != nil {
+		log.Printf("Error getting notes: %v", err)
 		http.Error(w, "Failed to get notes", http.StatusInternalServerError)
 		return
 	}
+
+	log.Printf("Found %d notes within timeframe", len(notes))
+
 	var noteContents []string
 	for _, note := range notes {
 		noteContents = append(noteContents, note.Content)
+		log.Printf("Note: %s - %s", note.Title, note.CreatedAt)
 	}
+
+	if len(noteContents) == 0 {
+		log.Printf("No notes found for timeframe %s", req.Timeframe)
+		// Send a message indicating no notes were found
+		noNotesResponse := fmt.Sprintf("data: {\"content\":\"No journal entries found for the past %s. Try creating some notes first.\"}\n\n", req.Timeframe)
+		w.Write([]byte(noNotesResponse))
+		return
+	}
+
 	err = chatService.GetClaritySummaryStream(noteContents, func(chunk string) {
 		w.Write([]byte(chunk))
 		if flusher, ok := w.(http.Flusher); ok {
@@ -216,6 +237,7 @@ func clarityStreamHandler(w http.ResponseWriter, r *http.Request, notesService *
 		}
 	})
 	if err != nil {
+		log.Printf("Error in GetClaritySummaryStream: %v", err)
 		http.Error(w, "Failed to get clarity", http.StatusInternalServerError)
 		return
 	}
@@ -250,12 +272,37 @@ func deleteNote(w http.ResponseWriter, r *http.Request, notesService *notes_serv
 }
 
 func main() {
-	// Initialising the database
-	db, _ := InitialiseDBClient("notes.db")
-	err := db.Ping()
+	// Check if app data directory path was provided
+	// if len(os.Args) < 2 {
+	// 	fmt.Println("Usage: ./backend <app_data_directory_path>")
+	// 	fmt.Println("Example: ./backend /path/to/app/data")
+	// }
+
+	// Check if the directory exists
+	// if _, err := os.Stat(appDataDir); os.IsNotExist(err) {
+	// 	log.Fatalf("App data directory does not exist: %s", appDataDir)
+	// }
+
+	// Create database path inside the app data directory
+	dir := filepath.Dir(os.Args[0])  // Gets the directory of the executable
+	absDir, err := filepath.Abs(dir) // Ensures it's an absolute path
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Failed to get absolute directory: %v", err)
 	}
+	dbPath := filepath.Join(absDir, "notes.db")
+	fmt.Println("Database will be created at:", dbPath)
+
+	fmt.Println("Journal backend started")
+
+	// Initialising the database
+	db, err := InitialiseDBClient(dbPath)
+	if err != nil {
+		log.Fatalf("Failed to initialise database: %v", err)
+	}
+	// err = db.Ping()
+	// if err != nil {
+	// 	log.Fatalf("Database ping failed: %v", err)
+	// }
 	db.Exec("CREATE TABLE IF NOT EXISTS notes (id TEXT PRIMARY KEY, title TEXT, content TEXT, created_at DATETIME, updated_at DATETIME)")
 
 	notesService := notes_service.NotesServiceImpl{}

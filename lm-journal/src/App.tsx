@@ -1,22 +1,43 @@
-import { useState, useCallback } from "react";
-import reactLogo from "./assets/react.svg";
-import { invoke } from "@tauri-apps/api/core";
 import "./App.css";
 import { AppSidebar } from "./components/general/AppSidebar";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
+import { SidebarProvider } from "@/components/ui/sidebar"
 import Dashboard from "@/views/Dashboard";
 import Chat from "@/views/Chat";
 import Notepad from "@/views/Notepad";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import Clarity from "./views/Clarity";
+import { Command } from '@tauri-apps/plugin-shell';
+import { useEffect } from 'react';
+import { appDataDir } from '@tauri-apps/api/path';
+// import { logger } from './utils/logger';
 
 function App() {
-  const [currentView, setCurrentView] = useState("dashboard");
 
-  // Memoize the callback to prevent unnecessary re-renders
-  const handleViewChange = useCallback((view: string) => {
-    setCurrentView(view);
-  }, []);
+  useEffect(() => {
+    const startAthenaBackend = async () => {
+      try {
+        console.log('Starting Athena backend...');
+        
+        const path = await appDataDir();
+        const command = Command.sidecar('athena-be/athena-backend', [path]);
+        console.log("APP PATH", path)
+        console.log('Command created', { command: command.toString() });
+        command.on('error', error => console.error(`athena-be error: "${error}"`));
+        command.stdout.on('data', line => console.log(`athena-be stdout: "${line}"`));
+        command.stderr.on('data', line => console.log(`athena-be stderr: "${line}"`));
+
+        const output = await command.spawn();
+        console.log('Athena backend started successfully', { output });
+      } catch (error) {
+        console.error('Failed to start Athena backend', { 
+          error: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined
+        });
+      }
+    }
+    
+    startAthenaBackend();
+  }, [])
 
   return (
     <SidebarProvider>
@@ -24,8 +45,8 @@ function App() {
         <AppSidebar/>
         <main className="flex-1 overflow-hidden">
           <Routes>
-            <Route path="/" element={<Dashboard viewChangeHandler={setCurrentView}/>} />
-            <Route path="/chat" element={<Chat viewChangeHandler={setCurrentView}/>} />
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/chat" element={<Chat />} />
             <Route path="/notepad/:id" element={<Notepad />} />
             <Route path="/clarity/:timeframe" element={<Clarity />} />
           </Routes>

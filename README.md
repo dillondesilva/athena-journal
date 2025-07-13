@@ -5,7 +5,9 @@ Journalling is a healthy practice that can provide an outlet for expression, pro
 
 Athena is a *journal that talks back to you*, helping you find recurring themes + cohesion in your journal entries over time. Whilst we only have a developer supported version for now, this doc outlines how to run Athena and contribute to it.
 
-![Demo Video](https://github.com/dillondesilva/athena-journal/blob/main/demo.mp4)
+
+https://github.com/user-attachments/assets/904fa4ca-5ad6-4000-a686-dfaaa814e4f8
+
 
 ## Prerequisites
 

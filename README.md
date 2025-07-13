@@ -5,9 +5,11 @@ Journalling is a healthy practice that can provide an outlet for expression, pro
 
 Athena is a *journal that talks back to you*, helping you find recurring themes + cohesion in your journal entries over time. Whilst we only have a developer supported version for now, this doc outlines how to run Athena and contribute to it.
 
+![Demo Video](demo.mp4)
+
 ## Prerequisites
 
-To build Athena, you must have `node`, `npm`, `rust`, `golang` and `llama.cpp` installed on your computer.
+To build Athena, you must have [`node`](https://nodejs.org/en/download/), [`npm`](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm), [`rust`](https://rustup.rs/), [`golang`](https://golang.org/doc/install) and [`llama.cpp`](https://github.com/ggerganov/llama.cpp) installed on your computer.
 
 - **Recommended Rust Version:** 1.87.0
 - **Recommended Go Version:** 1.24.3
@@ -66,4 +68,4 @@ The best way to get started is to **create a GitHub issue** first. This helps co
 3. **Create a GitHub issue** describing what you'd like to work on
 4. **Make your changes** and submit a pull request
 
-Every contribution, no matter how small, helps make Athena better. Thank you for considering contributing! 
+Every contribution, no matter how small, helps make Athena better. Thank you for considering contributing!

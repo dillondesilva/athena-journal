@@ -28,6 +28,10 @@ cd .. && ./build.sh
 
 And that should (hopefully) be it!
 
+**Note:** When you are running Athena for the first time, some features may not work while the model download is in progress. You can monitor this by observing the contents of the `llama.cpp` application cache.
+
+We currently use `gemma3-1b` as the chat backbone so it is ~750MB download.
+
 ## Getting started with development
 
 To run this LM journal app, you need to complete a few things:
